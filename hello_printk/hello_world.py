@@ -1,12 +1,25 @@
 #!/usr/bin/python
-# Copyright (c) PLUMgrid, Inc.
-# Licensed under the Apache License, Version 2.0 (the "License")
 
-# run in project examples directory with:
-# sudo ./hello_world.py"
-# see trace_fields.py for a longer example
+# hello() is the ebpf program that runs in the kernel
+# hello.py is the user space program
+
 
 from bcc import BPF
 
-# This may not work for 4.17 on x64, you need replace kprobe__sys_clone with kprobe____x64_sys_clone
-BPF(text='int kprobe____x64_sys_clone(void *ctx) { bpf_trace_printk("Hello, World!\\n"); return 0; }').trace_print()
+program = r"""
+    int hello(void *ctx){
+    # helper function to write a message 
+    bpf_trace_printk("Hello, World!\\n");
+    return 0;
+      }
+
+"""
+# creating a bpf object by passing the program
+b = BPF(text=program)
+# ebpf program is attached to the event execve system call
+# whenever execve system call is executed ebpf program whill be triggered
+syscall = b.get_syscall_fnname("execve")
+# attach syscall kernel function using kbprobe
+b.attach_kprobe(event=syscall,fn_name="hello")
+# read tracing output from the kernel
+b.trace_print()

@@ -4,7 +4,7 @@
 int counter = 0;
 
 SEC("xdp")
-int hello(void *ctx)
+int hello(struct xdp_md *ctx)
 {
     bpf_printk("Hello World %d", counter);
     counter++;
